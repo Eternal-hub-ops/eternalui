@@ -1477,7 +1477,7 @@ function EternalLib:Notify(config)
 	}
 end
 
-function EternalLib:CreateFAB()
+function EternalLib:CreateFAB(window)
 	local FGui = GetGui()
 	FGui.Name = "EternalFAB"
 	FGui.ResetOnSpawn = false
@@ -1488,7 +1488,7 @@ function EternalLib:CreateFAB()
 		Name = "FAB",
 		Parent = FGui,
 		BackgroundColor3 = T.AccentDim,
-		BackgroundTransparency = 0.15,
+		BackgroundTransparency = 0.12,
 		BorderSizePixel = 0,
 		Position = UDim2.new(1, -76, 1, -84),
 		Size = UDim2.new(0, 52, 0, 52),
@@ -1498,46 +1498,119 @@ function EternalLib:CreateFAB()
 		ZIndex = 20,
 	}, { Corner(15) })
 
-	Stroke(T.Accent, 1, 0.3).Parent = FAB
+	Stroke(T.Accent, 1.5, 0.25).Parent = FAB
 
-	local FGrad = Gradient({ T.AccentDim, T.AccentBright }, 135)
-	FGrad.Parent = FAB
+	Gradient({ T.AccentDim, T.AccentBright }, 135).Parent = FAB
 
 	local ELabel = New("TextLabel", {
-		Name = "E",
+		Name = "ELabel",
 		Parent = FAB,
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 0),
 		Font = Enum.Font.GothamBold,
 		Text = "E",
 		TextColor3 = Color3.fromRGB(255, 255, 255),
-		TextSize = 20,
+		TextSize = 22,
 		ZIndex = 21,
 	})
+
+	local hubVisible = true
+	local animating = false
+
+	local function SetHubVisible(state)
+		if animating then return end
+		if not window then return end
+
+		local main   = window.Main
+		local shadow = window.Shadow
+		local sz     = window._size
+		local pos    = window._pos
+
+		if state then
+			animating = true
+			main.Visible = true
+			shadow.Visible = true
+			main.Size = UDim2.new(0, sz.X.Offset, 0, 0)
+			main.Position = UDim2.new(pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset + sz.Y.Offset / 2)
+			Tween(main, {
+				Size = sz,
+				Position = pos,
+			}, 0.38, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+			task.wait(0.38)
+			animating = false
+		else
+			animating = true
+			local tw = Tween(main, {
+				Size = UDim2.new(0, sz.X.Offset, 0, 0),
+				Position = UDim2.new(pos.X.Scale, pos.X.Offset, pos.Y.Scale, pos.Y.Offset + sz.Y.Offset / 2),
+			}, 0.26, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+			task.wait(0.28)
+			main.Visible = false
+			shadow.Visible = false
+			animating = false
+		end
+	end
 
 	local glowing = true
 	task.spawn(function()
 		while glowing and FAB and FAB.Parent do
-			Tween(FAB, { BackgroundTransparency = 0.05 }, 1.2)
-			task.wait(1.2)
-			Tween(FAB, { BackgroundTransparency = 0.25 }, 1.2)
-			task.wait(1.2)
+			Tween(FAB, { BackgroundTransparency = 0.04 }, 1.1)
+			task.wait(1.1)
+			Tween(FAB, { BackgroundTransparency = 0.22 }, 1.1)
+			task.wait(1.1)
 		end
 	end)
 
 	FAB.MouseEnter:Connect(function()
-		Tween(FAB, { Size = UDim2.new(0, 56, 0, 56), Position = UDim2.new(1, -80, 1, -88) }, 0.18, Enum.EasingStyle.Back)
-	end)
-	FAB.MouseLeave:Connect(function()
-		Tween(FAB, { Size = UDim2.new(0, 52, 0, 52), Position = UDim2.new(1, -76, 1, -84) }, 0.18, Enum.EasingStyle.Back)
+		if animating then return end
+		Tween(FAB, {
+			Size = UDim2.new(0, 57, 0, 57),
+			Position = UDim2.new(1, -81, 1, -89),
+		}, 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 	end)
 
+	FAB.MouseLeave:Connect(function()
+		Tween(FAB, {
+			Size = UDim2.new(0, 52, 0, 52),
+			Position = UDim2.new(1, -76, 1, -84),
+		}, 0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	end)
+
+	FAB.MouseButton1Down:Connect(function()
+		Tween(FAB, {
+			Size = UDim2.new(0, 48, 0, 48),
+			Position = UDim2.new(1, -72, 1, -80),
+		}, 0.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	end)
+
+	FAB.MouseButton1Click:Connect(function()
+		if animating then return end
+		hubVisible = not hubVisible
+
+		Tween(FAB, {
+			Size = UDim2.new(0, 52, 0, 52),
+			Position = UDim2.new(1, -76, 1, -84),
+		}, 0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+		if hubVisible then
+			Tween(ELabel, { TextTransparency = 0, TextColor3 = Color3.fromRGB(255, 255, 255) }, 0.15)
+		else
+			Tween(ELabel, { TextTransparency = 0.3 }, 0.15)
+		end
+
+		SetHubVisible(hubVisible)
+	end)
+
+	if window and window.CloseBtn then
+		window.CloseBtn.MouseButton1Click:Connect(function()
+			hubVisible = false
+			Tween(ELabel, { TextTransparency = 0.3 }, 0.15)
+		end)
+	end
+
 	return {
-		Button = FAB,
-		Gui = FGui,
-		SetIcon = function(icon)
-			ELabel.Text = icon
-		end,
+		Button  = FAB,
+		Gui     = FGui,
 		Destroy = function()
 			glowing = false
 			FGui:Destroy()

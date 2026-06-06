@@ -1640,11 +1640,16 @@ function eternallib:MakeWindow(Configs)
 		if Configs.Button then
 			local Filtered = {}
 			for k, v in pairs(Configs.Button) do
-				if k ~= "Image" then
+				if k ~= "Image" and k ~= "ImageColor3" and k ~= "ImageRectOffset" and k ~= "ImageRectSize" and k ~= "ScaleType" and k ~= "SliceCenter" and k ~= "SliceScale" then
 					Filtered[k] = v
 				end
 			end
-			SetProps(Button, Filtered)
+			local success, err = pcall(function()
+				SetProps(Button, Filtered)
+			end)
+			if not success then
+				warn("Eternal Hub: AddMinimizeButton error:", err)
+			end
 		end
 		Button.Activated:Connect(Window.Minimize)
 		

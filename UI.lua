@@ -274,15 +274,26 @@ local function CreateNeonButton(parent, text, callback)
     return button
 end
 
-function Library:CreateWindow(title)
-    TitleText.Text = title or "ETERNAL HUB"
+function Library:MakeWindow(options)
+    local title = options and options.Name or "ETERNAL HUB"
+    TitleText.Text = title
     MainFrame.Size = UDim2.new(0, 550, 0, 650)
     if UserInputService.TouchEnabled then
         MainFrame.Size = UDim2.new(0, 650, 0, 750)
     end
+    MainFrame.Visible = true
     UpdateScale()
     AnimateBorder()
     return self
+end
+
+function Library:CreateWindow(title)
+    return Library:MakeWindow({Name = title})
+end
+
+function Library:MakeTab(options)
+    local tabName = options and options.Name or "Tab"
+    return Library:CreateTab(tabName)
 end
 
 function Library:CreateTab(tabName)
@@ -327,6 +338,7 @@ function Library:CreateTab(tabName)
     tabButton.MouseButton1Click:Connect(selectTab)
     
     if not CurrentTab then
+        CurrentTab = tabContent
         selectTab()
     end
     
@@ -376,12 +388,18 @@ function Library:CreateTab(tabName)
         end
         
         local section = {
-            AddButton = function(options)
+            AddButton = function(self, options)
+                if type(self) ~= "table" then
+                    options = self
+                end
                 local btn = CreateNeonButton(sectionContent, options.Name, options.Callback or function() end)
                 updateHeight()
                 return btn
             end,
-            AddToggle = function(options)
+            AddToggle = function(self, options)
+                if type(self) ~= "table" then
+                    options = self
+                end
                 local toggleFrame = Instance.new("Frame")
                 toggleFrame.Size = UDim2.new(1, -20, 0, 45)
                 toggleFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -442,13 +460,16 @@ function Library:CreateTab(tabName)
                         TweenService:Create(toggleBtn, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {BackgroundColor3 = Color3.fromRGB(40, 40, 55)}):Play()
                         TweenService:Create(toggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 3, 0, 2)}):Play()
                     end
-                    options.Callback(toggled)
+                    if options.Callback then options.Callback(toggled) end
                 end)
                 
                 updateHeight()
                 return toggleFrame
             end,
-            AddSlider = function(options)
+            AddSlider = function(self, options)
+                if type(self) ~= "table" then
+                    options = self
+                end
                 local sliderFrame = Instance.new("Frame")
                 sliderFrame.Size = UDim2.new(1, -20, 0, 75)
                 sliderFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -524,7 +545,7 @@ function Library:CreateTab(tabName)
                     fillBar.Size = UDim2.new(relativePos, 0, 1, 0)
                     label.Text = options.Name .. ": " .. tostring(value)
                     valueLabel.Text = tostring(value)
-                    options.Callback(value)
+                    if options.Callback then options.Callback(value) end
                 end
                 
                 local dragging = false
@@ -555,7 +576,10 @@ function Library:CreateTab(tabName)
                 updateHeight()
                 return sliderFrame
             end,
-            AddDropdown = function(options)
+            AddDropdown = function(self, options)
+                if type(self) ~= "table" then
+                    options = self
+                end
                 local dropdownFrame = Instance.new("Frame")
                 dropdownFrame.Size = UDim2.new(1, -20, 0, 45)
                 dropdownFrame.Position = UDim2.new(0, 10, 0, 0)
@@ -645,7 +669,7 @@ function Library:CreateTab(tabName)
                     
                     itemBtn.MouseButton1Click:Connect(function()
                         label.Text = options.Name .. ": " .. item
-                        options.Callback(item)
+                        if options.Callback then options.Callback(item) end
                         isOpen = false
                         TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
                         task.wait(0.2)
@@ -654,12 +678,14 @@ function Library:CreateTab(tabName)
                 end
                 updateListHeight()
                 
+                local cachedHeight = dropdownList.AbsoluteSize.Y
                 dropdownBtn.MouseButton1Click:Connect(function()
                     isOpen = not isOpen
                     if isOpen then
                         dropdownList.Visible = true
                         dropdownList.Size = UDim2.new(1, 0, 0, 0)
-                        TweenService:Create(dropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0, dropdownList.AbsoluteSize.Y)}):Play()
+                        local h = cachedHeight > 0 and cachedHeight or (#options.List * 40 + 10)
+                        TweenService:Create(dropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0, h)}):Play()
                     else
                         TweenService:Create(dropdownList, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(1, 0, 0, 0)}):Play()
                         task.wait(0.2)
@@ -675,7 +701,8 @@ function Library:CreateTab(tabName)
     end
     
     return {
-        CreateSection = createSection
+        CreateSection = createSection,
+        MakeSection = createSection,
     }
 end
 

@@ -1402,7 +1402,7 @@ end
 
 function eternallib:MakeWindow(Configs)
 	local WTitle = Configs[1] or Configs.Name or Configs.Title or "Eternal Hub"
-	local WMiniText = Configs[2] or Configs.SubTitle or "by : Eternal"
+	local WMiniText = Configs[2] or Configs.SubTitle or "Made by sxy.com"
 	
 	Settings.ScriptFile = Configs[3] or Configs.SaveFolder or false
 	
@@ -1637,7 +1637,15 @@ function eternallib:MakeWindow(Configs)
 			SetProps(Stroke, Configs.Corner)
 		end
 		
-		SetProps(Button, Configs.Button)
+		if Configs.Button then
+			local Filtered = {}
+			for k, v in pairs(Configs.Button) do
+				if k ~= "Image" then
+					Filtered[k] = v
+				end
+			end
+			SetProps(Button, Filtered)
+		end
 		Button.Activated:Connect(Window.Minimize)
 		
 		return {
